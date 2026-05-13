@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Routines">
+<meta name="theme-color" content="#1a1a1a">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<title>Daily Routines</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --morning:#f97316; --morning-bg:#fff7ed; --morning-soft:#fde8d0;
+  --afternoon:#0ea5e9; --afternoon-bg:#f0f9ff; --afternoon-soft:#bae6fd;
+  --anytime:#7c3aed; --anytime-bg:#f5f3ff; --anytime-soft:#ddd6fe;
+  --evening:#1e3a5f; --evening-soft:#334155;
+  --weekly:#0d9488; --weekly-bg:#f0fdfa;
+  --monthly:#be185d; --monthly-bg:#fdf2f8;
+  --r:16px;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overscroll-behavior:none}
+body{font-family:'DM Sans',sans-serif;background:#f1f0ec;color:#1a1a1a;display:flex;flex-direction:column;max-width:480px;margin:0 auto;overflow:hidden;height:100dvh}
+
+/* HEADER */
+.header{background:#1a1a1a;padding:calc(14px + var(--safe-top)) 20px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.header-left h1{font-family:'DM Serif Display',serif;font-style:italic;font-size:1.25rem;color:#fff}
+.header-left .date{font-size:.7rem;color:#666;font-weight:300;letter-spacing:.04em;text-transform:uppercase;margin-top:1px}
+.reset-btn{background:transparent;border:1px solid #3a3a3a;color:#888;padding:7px 16px;border-radius:20px;font-size:.72rem;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500}
+.reset-btn:active{border-color:#888;color:#fff;background:#333}
+
+/* SUMMARY */
+.summary-strip{background:#1a1a1a;padding:0 20px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.summary-count{font-family:'DM Serif Display',serif;font-style:italic;font-size:2.4rem;color:#fff;line-height:1}
+.summary-label{font-size:.68rem;color:#555;text-transform:uppercase;letter-spacing:.06em;margin-top:4px}
+.rings{display:flex;gap:8px;align-items:center}
+.ring-wrap{display:flex;flex-direction:column;align-items:center;gap:3px}
+.ring-wrap svg{transform:rotate(-90deg)}
+.ring-tag{font-size:.6rem;font-weight:600;color:#555;letter-spacing:.04em;text-transform:uppercase}
+
+/* TABS */
+.tab-nav{display:flex;background:#1a1a1a;padding:0 12px 12px;gap:6px;flex-shrink:0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tab-nav::-webkit-scrollbar{display:none}
+.tab-btn{flex-shrink:0;border:none;background:#2a2a2a;color:#666;padding:9px 12px 8px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.68rem;font-weight:500;cursor:pointer;transition:all .18s;white-space:nowrap;line-height:1.3}
+.tab-btn.active{background:#fff;color:#1a1a1a}
+.tab-btn span{display:block;font-size:1rem;margin-bottom:1px;text-align:center}
+
+/* SCROLL */
+.scroll-area{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:16px 14px calc(16px + var(--safe-bottom))}
+
+/* SECTIONS */
+.routine-section{display:none}
+.routine-section.active{display:block}
+.routine-header{border-radius:var(--r) var(--r) 0 0;padding:18px 18px 14px}
+.routine-header h2{font-family:'DM Serif Display',serif;font-style:italic;font-size:1.45rem;margin-bottom:3px}
+.routine-meta{font-size:.72rem;font-weight:300;opacity:.7}
+.prog-wrap{margin-top:12px;background:rgba(0,0,0,.12);border-radius:4px;height:4px;overflow:hidden}
+.prog-fill{height:100%;border-radius:4px;transition:width .35s ease}
+
+/* COLOR THEMES */
+.hdr-morning{background:var(--morning);color:#fff} .fill-morning{background:rgba(255,255,255,.65)}
+.card-morning{background:var(--morning-bg);border-bottom:1px solid var(--morning-soft)}
+.chk-morning:checked + label .circle{background:var(--morning);border-color:var(--morning)}
+.hdr-afternoon{background:var(--afternoon);color:#fff} .fill-afternoon{background:rgba(255,255,255,.65)}
+.card-afternoon{background:var(--afternoon-bg);border-bottom:1px solid var(--afternoon-soft)}
+.chk-afternoon:checked + label .circle{background:var(--afternoon);border-color:var(--afternoon)}
+.hdr-anytime{background:var(--anytime);color:#fff} .fill-anytime{background:rgba(255,255,255,.65)}
+.card-anytime{background:var(--anytime-bg);border-bottom:1px solid var(--anytime-soft)}
+.chk-anytime:checked + label .circle{background:var(--anytime);border-color:var(--anytime)}
+.hdr-evening{background:var(--evening);color:#cbd5e1} .fill-evening{background:rgba(255,255,255,.35)}
+.card-evening{background:#1e293b;border-bottom:1px solid #2d3f55;color:#e2e8f0}
+.chk-evening:checked + label .circle{background:#60a5fa;border-color:#60a5fa}
+
+/* HABIT LIST */
+.habit-list{border-radius:0 0 var(--r) var(--r);overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.08);margin-bottom:6px}
+.habit-item{position:relative}
+input[type="checkbox"].hchk{display:none}
+.habit-item label{display:flex;align-items:center;width:100%;padding:15px 16px;cursor:pointer;gap:14px;user-select:none;-webkit-user-select:none;min-height:58px}
+.habit-item:last-child{border-bottom:none!important}
+.circle{width:28px;height:28px;min-width:28px;border-radius:50%;border:2px solid #d1d5db;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
+.card-evening .circle{border-color:#475569}
+.circle svg{display:none;width:13px;height:13px}
+input[type="checkbox"].hchk:checked + label .circle svg{display:block}
+input[type="checkbox"].hchk:checked + label .htext{opacity:.38;text-decoration:line-through;text-decoration-color:rgba(0,0,0,.18)}
+.card-evening input[type="checkbox"].hchk:checked + label .htext{text-decoration-color:rgba(255,255,255,.18)}
+.hname{font-size:.9rem;font-weight:500;line-height:1.35}
+.hdur{font-size:.68rem;opacity:.45;margin-top:1px;font-weight:300}
+
+/* INSTALL BANNER */
+.install-banner{display:none;background:#1a1a1a;color:#fff;padding:12px 18px;margin-bottom:12px;border-radius:12px;font-size:.78rem;align-items:center;justify-content:space-between;gap:12px}
+.install-banner.show{display:flex}
+.install-btn{background:#fff;color:#1a1a1a;border:none;padding:7px 14px;border-radius:8px;font-size:.75rem;font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer;white-space:nowrap}
+.install-dismiss{background:none;border:none;color:#666;font-size:1.1rem;cursor:pointer;padding:0 4px}
+
+/* WEEKLY */
+.week-header{background:var(--weekly);color:#fff;border-radius:var(--r) var(--r) 0 0;padding:18px 18px 14px}
+.week-header h2{font-family:'DM Serif Display',serif;font-style:italic;font-size:1.45rem;margin-bottom:3px}
+.week-body{background:var(--weekly-bg);border-radius:0 0 var(--r) var(--r);padding:16px;box-shadow:0 4px 20px rgba(0,0,0,.08);margin-bottom:12px}
+.add-row{display:flex;gap:8px;margin-bottom:14px}
+.add-row input[type="text"]{flex:1;border:1.5px solid #d1fae5;background:#fff;border-radius:10px;padding:10px 14px;font-size:.88rem;font-family:'DM Sans',sans-serif;outline:none;color:#1a1a1a}
+.add-row input[type="text"]:focus{border-color:var(--weekly)}
+.add-primary-btn{background:var(--weekly);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:.82rem;font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer;white-space:nowrap}
+.staging-item{background:#fff;border:1.5px solid #d1fae5;border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.staging-name{font-size:.85rem;font-weight:500;flex:1;min-width:120px}
+.staging-selects{display:flex;gap:6px}
+.q-select{border:1.5px solid #d1d5db;border-radius:8px;padding:5px 8px;font-size:.72rem;font-family:'DM Sans',sans-serif;background:#fff;color:#1a1a1a;cursor:pointer}
+.q-select:focus{outline:none;border-color:var(--weekly)}
+.remove-task{background:none;border:none;color:#aaa;font-size:1rem;cursor:pointer;padding:2px 4px}
+.sort-row{display:flex;gap:8px;margin-bottom:16px}
+.sort-btn{flex:1;background:var(--weekly);color:#fff;border:none;border-radius:10px;padding:11px;font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer}
+.clear-btn{flex:1;background:transparent;border:1.5px solid #d1d5db;color:#888;border-radius:10px;padding:11px;font-family:'DM Sans',sans-serif;font-size:.82rem;cursor:pointer}
+.quadrants{display:none;flex-direction:column;gap:10px}
+.quadrants.show{display:flex}
+.quadrant{border-radius:12px;overflow:hidden}
+.q-head{padding:10px 14px;font-size:.78rem;font-weight:600;letter-spacing:.02em;text-transform:uppercase}
+.q-body{padding:10px 14px}
+.q-empty{font-size:.75rem;color:#aaa;font-style:italic}
+.q1 .q-head{background:#dc2626;color:#fff} .q1 .q-body{background:#fef2f2}
+.q2 .q-head{background:#16a34a;color:#fff} .q2 .q-body{background:#f0fdf4}
+.q3 .q-head{background:#d97706;color:#fff} .q3 .q-body{background:#fffbeb}
+.q4 .q-head{background:#6b7280;color:#fff} .q4 .q-body{background:#f9fafb}
+.q-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid rgba(0,0,0,.06);font-size:.85rem}
+.q-item:last-child{border-bottom:none}
+.q4 .q-item{text-decoration:line-through;color:#aaa}
+.q-extra{font-size:.72rem;display:flex;align-items:center;gap:6px;flex-shrink:0}
+.q-extra input[type="text"]{border:1px solid #d1d5db;border-radius:6px;padding:4px 8px;font-size:.72rem;font-family:'DM Sans',sans-serif;width:90px;background:#fff}
+.q-extra label{color:#888;white-space:nowrap}
+
+/* MONTHLY */
+.month-header{background:var(--monthly);color:#fff;border-radius:var(--r) var(--r) 0 0;padding:18px 18px 14px}
+.month-header h2{font-family:'DM Serif Display',serif;font-style:italic;font-size:1.45rem;margin-bottom:3px}
+.month-body{background:var(--monthly-bg);border-radius:0 0 var(--r) var(--r);padding:16px;box-shadow:0 4px 20px rgba(0,0,0,.08);margin-bottom:12px}
+.section-title{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--monthly);margin:14px 0 8px}
+.section-title:first-child{margin-top:0}
+.month-goal-item{background:#fff;border:1.5px solid #fce7f3;border-radius:10px;padding:12px 14px;margin-bottom:8px}
+.goal-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px}
+.goal-circle{width:24px;height:24px;min-width:24px;border-radius:50%;border:2px solid #fbcfe8;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;flex-shrink:0;margin-top:1px}
+.goal-circle.done{background:var(--monthly);border-color:var(--monthly)}
+.goal-circle svg{display:none;width:11px;height:11px}
+.goal-circle.done svg{display:block}
+.goal-text{flex:1;font-size:.88rem;font-weight:500;line-height:1.4}
+.goal-text.done{text-decoration:line-through;opacity:.4}
+.goal-remove{background:none;border:none;color:#ddd;font-size:.9rem;cursor:pointer;padding:0;flex-shrink:0}
+.goal-notes{width:100%;border:1px solid #fce7f3;border-radius:8px;padding:8px 10px;font-size:.78rem;font-family:'DM Sans',sans-serif;color:#555;resize:none;background:#fdf2f8;min-height:48px}
+.goal-notes:focus{outline:none;border-color:var(--monthly)}
+.add-goal-row{display:flex;gap:8px;margin-top:8px}
+.add-goal-row input[type="text"]{flex:1;border:1.5px solid #fce7f3;background:#fff;border-radius:10px;padding:10px 14px;font-size:.85rem;font-family:'DM Sans',sans-serif;outline:none;color:#1a1a1a}
+.add-goal-row input[type="text"]:focus{border-color:var(--monthly)}
+.add-goal-btn{background:var(--monthly);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:.82rem;font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer}
+.review-box{background:#fff;border:1.5px solid #fce7f3;border-radius:10px;padding:12px 14px;margin-bottom:8px}
+.review-label{font-size:.72rem;font-weight:600;color:var(--monthly);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.review-textarea{width:100%;border:none;background:transparent;font-size:.85rem;font-family:'DM Sans',sans-serif;color:#1a1a1a;resize:none;min-height:60px;line-height:1.5}
+.review-textarea:focus{outline:none}
+.review-textarea::placeholder{color:#ccc}
+.archive-btn{width:100%;background:transparent;border:1.5px solid #fce7f3;color:#aaa;border-radius:10px;padding:10px;font-family:'DM Sans',sans-serif;font-size:.78rem;cursor:pointer;margin-top:4px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>Daily Routines</h1>
+    <div class="date" id="dateLabel"></div>
+  </div>
+  <button class="reset-btn" onclick="resetDay()">Reset Day</button>
+</div>
+
+<div class="summary-strip">
+  <div>
+    <div class="summary-count"><span id="totalDone">0</span><span style="color:#333;font-size:1.5rem"> / </span><span id="totalAll">0</span></div>
+    <div class="summary-label">Habits complete</div>
+  </div>
+  <div class="rings">
+    <div class="ring-wrap">
+      <svg viewBox="0 0 38 38" width="38" height="38"><circle cx="19" cy="19" r="14" fill="none" stroke="#2a2a2a" stroke-width="4"/><circle id="r-morning" cx="19" cy="19" r="14" fill="none" stroke="#f97316" stroke-width="4" stroke-linecap="round" stroke-dasharray="0 88"/></svg>
+      <div class="ring-tag">AM</div>
+    </div>
+    <div class="ring-wrap">
+      <svg viewBox="0 0 38 38" width="38" height="38"><circle cx="19" cy="19" r="14" fill="none" stroke="#2a2a2a" stroke-width="4"/><circle id="r-afternoon" cx="19" cy="19" r="14" fill="none" stroke="#0ea5e9" stroke-width="4" stroke-linecap="round" stroke-dasharray="0 88"/></svg>
+      <div class="ring-tag">PM</div>
+    </div>
+    <div class="ring-wrap">
+      <svg viewBox="0 0 38 38" width="38" height="38"><circle cx="19" cy="19" r="14" fill="none" stroke="#2a2a2a" stroke-width="4"/><circle id="r-anytime" cx="19" cy="19" r="14" fill="none" stroke="#7c3aed" stroke-width="4" stroke-linecap="round" stroke-dasharray="0 88"/></svg>
+      <div class="ring-tag">ANY</div>
+    </div>
+    <div class="ring-wrap">
+      <svg viewBox="0 0 38 38" width="38" height="38"><circle cx="19" cy="19" r="14" fill="none" stroke="#2a2a2a" stroke-width="4"/><circle id="r-evening" cx="19" cy="19" r="14" fill="none" stroke="#60a5fa" stroke-width="4" stroke-linecap="round" stroke-dasharray="0 88"/></svg>
+      <div class="ring-tag">EVE</div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-nav">
+  <button class="tab-btn active" onclick="showTab('morning',this)"><span>🌅</span>Morning</button>
+  <button class="tab-btn" onclick="showTab('afternoon',this)"><span>☀️</span>Afternoon</button>
+  <button class="tab-btn" onclick="showTab('anytime',this)"><span>🍂</span>Anytime</button>
+  <button class="tab-btn" onclick="showTab('evening',this)"><span>🌙</span>Evening</button>
+  <button class="tab-btn" onclick="showTab('weekly',this)"><span>📋</span>Weekly</button>
+  <button class="tab-btn" onclick="showTab('monthly',this)"><span>🎯</span>Monthly</button>
+</div>
+
+<div class="scroll-area">
+
+  <div class="install-banner" id="installBanner">
+    <span>Add to your home screen for the full app experience.</span>
+    <button class="install-btn" id="installBtn">Install</button>
+    <button class="install-dismiss" onclick="dismissInstall()">✕</button>
+  </div>
+
+  <!-- MORNING -->
+  <div class="routine-section active" id="tab-morning">
+    <div class="routine-header hdr-morning">
+      <h2>Morning Routine</h2>
+      <div class="routine-meta"><span id="cnt-morning">0</span> of 14 complete</div>
+      <div class="prog-wrap"><div class="prog-fill fill-morning" id="bar-morning" style="width:0%"></div></div>
+    </div>
+    <div class="habit-list" id="list-morning"></div>
+  </div>
+
+  <!-- AFTERNOON -->
+  <div class="routine-section" id="tab-afternoon">
+    <div class="routine-header hdr-afternoon">
+      <h2>Afternoon Routine</h2>
+      <div class="routine-meta"><span id="cnt-afternoon">0</span> of 5 complete</div>
+      <div class="prog-wrap"><div class="prog-fill fill-afternoon" id="bar-afternoon" style="width:0%"></div></div>
+    </div>
+    <div class="habit-list" id="list-afternoon"></div>
+  </div>
+
+  <!-- ANYTIME -->
+  <div class="routine-section" id="tab-anytime">
+    <div class="routine-header hdr-anytime">
+      <h2>Anytime</h2>
+      <div class="routine-meta"><span id="cnt-anytime">0</span> of 6 complete</div>
+      <div class="prog-wrap"><div class="prog-fill fill-anytime" id="bar-anytime" style="width:0%"></div></div>
+    </div>
+    <div class="habit-list" id="list-anytime"></div>
+  </div>
+
+  <!-- EVENING -->
+  <div class="routine-section" id="tab-evening">
+    <div class="routine-header hdr-evening">
+      <h2>Evening Routine</h2>
+      <div class="routine-meta"><span id="cnt-evening">0</span> of 11 complete</div>
+      <div class="prog-wrap"><div class="prog-fill fill-evening" id="bar-evening" style="width:0%"></div></div>
+    </div>
+    <div class="habit-list" id="list-evening"></div>
+  </div>
+
+  <!-- WEEKLY -->
+  <div class="routine-section" id="tab-weekly">
+    <div class="week-header">
+      <h2>Weekly Planner</h2>
+      <div class="routine-meta">Eisenhower Matrix — auto-clears every Monday</div>
+    </div>
+    <div class="week-body">
+      <div class="add-row">
+        <input type="text" id="taskInput" placeholder="Add a task..." onkeydown="if(event.key==='Enter')addTask()">
+        <button class="add-primary-btn" onclick="addTask()">Add</button>
+      </div>
+      <div id="stagingList"></div>
+      <div class="sort-row">
+        <button class="sort-btn" onclick="sortTasks()">Sort into Quadrants</button>
+        <button class="clear-btn" onclick="clearWeek()">Clear Week</button>
+      </div>
+      <div class="quadrants" id="quadrants">
+        <div class="quadrant q1"><div class="q-head">Q1 — Do It Now</div><div class="q-body" id="q1-body"></div></div>
+        <div class="quadrant q2"><div class="q-head">Q2 — Schedule It</div><div class="q-body" id="q2-body"></div></div>
+        <div class="quadrant q3"><div class="q-head">Q3 — Delegate It</div><div class="q-body" id="q3-body"></div></div>
+        <div class="quadrant q4"><div class="q-head">Q4 — Eliminate It</div><div class="q-body" id="q4-body"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MONTHLY -->
+  <div class="routine-section" id="tab-monthly">
+    <div class="month-header">
+      <h2>Monthly Goals</h2>
+      <div class="routine-meta" id="monthLabel"></div>
+    </div>
+    <div class="month-body">
+      <div class="section-title">Goals This Month</div>
+      <div id="goalsList"></div>
+      <div class="add-goal-row">
+        <input type="text" id="goalInput" placeholder="Add a goal..." onkeydown="if(event.key==='Enter')addGoal()">
+        <button class="add-goal-btn" onclick="addGoal()">Add</button>
+      </div>
+      <div class="section-title" style="margin-top:20px">Month-End Review</div>
+      <div class="review-box">
+        <div class="review-label">What went well?</div>
+        <textarea class="review-textarea" id="rev-well" placeholder="..." oninput="saveMonthly()" rows="3"></textarea>
+      </div>
+      <div class="review-box">
+        <div class="review-label">What needs work?</div>
+        <textarea class="review-textarea" id="rev-improve" placeholder="..." oninput="saveMonthly()" rows="3"></textarea>
+      </div>
+      <div class="review-box">
+        <div class="review-label">Focus for next month</div>
+        <textarea class="review-textarea" id="rev-next" placeholder="..." oninput="saveMonthly()" rows="3"></textarea>
+      </div>
+      <button class="archive-btn" onclick="clearMonth()">Archive & Start Fresh Month</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const ROUTINES = {
+  morning: { total:14, habits:[
+    {id:'mg1', name:'Thank God for Another Day', dur:'10 min'},
+    {id:'mg2', name:'Drink Water', dur:null},
+    {id:'mg3', name:'Make Your Bed', dur:null},
+    {id:'mg4', name:'Molly belly rubs', dur:null},
+    {id:'mg5', name:'Tidy Up', dur:null},
+    {id:'mg6', name:'Morning Mantra', dur:null},
+    {id:'mg7', name:'Meditation', dur:null},
+    {id:'mg8', name:'Coffee me time', dur:null},
+    {id:'mg9', name:'20 Push ups or stretch', dur:null},
+    {id:'mg10',name:'Take Your Medicine', dur:null},
+    {id:'mg11',name:'Visualize how you want the day to go', dur:null},
+    {id:'mg12',name:'Top 5', dur:null},
+    {id:'mg13',name:'Eisenhower Check', dur:'2 min'},
+    {id:'mg14',name:'Gratitude for 3 things', dur:null},
+  ]},
+  afternoon: { total:5, habits:[
+    {id:'af1',name:'Emotional Check-Up',dur:null},
+    {id:'af2',name:'Take a break',dur:'15 min'},
+    {id:'af3',name:'Drink Water',dur:null},
+    {id:'af4',name:'20 Push ups or stretch',dur:'10 min'},
+    {id:'af5',name:'Investigate External Messages',dur:null},
+  ]},
+  anytime: { total:6, habits:[
+    {id:'an1',name:'Exercise',dur:'30 min'},
+    {id:'an2',name:'Mirror work affirmations',dur:null},
+    {id:'an3',name:'Movement for 10 min after lunch',dur:'10 min'},
+    {id:'an4',name:'Duolingo',dur:'10 min'},
+    {id:'an5',name:'Elevate app',dur:'5 min'},
+    {id:'an6',name:'Paladin History App',dur:'10 min'},
+  ]},
+  evening: { total:11, habits:[
+    {id:'ev1', name:'Eat low carb meal (pref b4 8)',dur:null},
+    {id:'ev2', name:'Passeggiata 10 min after meal',dur:'10 min'},
+    {id:'ev3', name:'Write In Your Journal',dur:null},
+    {id:'ev4', name:'Meditate',dur:null},
+    {id:'ev5', name:'Gratitude & Brag',dur:null},
+    {id:'ev6', name:'Read',dur:'5 min'},
+    {id:'ev7', name:'20 Push ups or stretch',dur:null},
+    {id:'ev8', name:'Take gut medicine',dur:'10 min'},
+    {id:'ev9', name:'Mirror work (positivity or child)',dur:'10 min'},
+    {id:'ev10',name:'Drink herbal tea if craving something (raspberry peppermint?)',dur:'10 min'},
+    {id:'ev11',name:'Check In with Your Body',dur:null},
+  ]}
+};
+
+const CIRC = 2*Math.PI*14;
+const SK='routines_v3', DK='routines_date';
+const WSK='weekly_v1', WDK='weekly_week';
+const MSK='monthly_v1', MDK='monthly_month';
+
+function today()     { return new Date().toISOString().split('T')[0]; }
+function thisWeek()  { const d=new Date(),day=d.getDay(),diff=d.getDate()-day+(day===0?-6:1),mon=new Date(d.setDate(diff)); return mon.toISOString().split('T')[0]; }
+function thisMonth() { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
+
+// DAILY
+function loadState() {
+  if (localStorage.getItem(DK)!==today()) { localStorage.setItem(DK,today()); localStorage.removeItem(SK); return {}; }
+  try { return JSON.parse(localStorage.getItem(SK))||{}; } catch { return {}; }
+}
+function saveState() { localStorage.setItem(SK,JSON.stringify(state)); }
+let state = loadState();
+
+// WEEKLY
+function loadWeekly() {
+  if (localStorage.getItem(WDK)!==thisWeek()) { localStorage.setItem(WDK,thisWeek()); localStorage.removeItem(WSK); return {tasks:[],sorted:false}; }
+  try { return JSON.parse(localStorage.getItem(WSK))||{tasks:[],sorted:false}; } catch { return {tasks:[],sorted:false}; }
+}
+function saveWeekly() { localStorage.setItem(WSK,JSON.stringify(weeklyState)); }
+let weeklyState = loadWeekly();
+
+// MONTHLY
+function loadMonthly() {
+  try { return JSON.parse(localStorage.getItem(MSK))||{month:thisMonth(),goals:[],well:'',improve:'',next:''}; } catch { return {month:thisMonth(),goals:[],well:'',improve:'',next:''}; }
+}
+function saveMonthly() {
+  monthlyState.well    = document.getElementById('rev-well').value;
+  monthlyState.improve = document.getElementById('rev-improve').value;
+  monthlyState.next    = document.getElementById('rev-next').value;
+  localStorage.setItem(MDK,thisMonth());
+  localStorage.setItem(MSK,JSON.stringify(monthlyState));
+}
+let monthlyState = loadMonthly();
+
+// RENDER HABITS
+function habitHTML(h,key) {
+  const done = state[h.id]?'checked':'';
+  return `<div class="habit-item card-${key}">
+    <input type="checkbox" class="hchk chk-${key}" id="${h.id}" ${done} onchange="toggle('${h.id}','${key}')">
+    <label for="${h.id}">
+      <div class="circle"><svg viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5L5 10L11.5 3" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="htext">
+        <div class="hname">${h.name}</div>
+        ${h.dur?`<div class="hdur">${h.dur}</div>`:''}
+      </div>
+    </label>
+  </div>`;
+}
+
+function renderLists() {
+  for (const [key,r] of Object.entries(ROUTINES))
+    document.getElementById('list-'+key).innerHTML = r.habits.map(h=>habitHTML(h,key)).join('');
+}
+
+function toggle(id,key) {
+  state[id] = document.getElementById(id).checked;
+  saveState(); updateProgress(key); updateSummary();
+}
+
+function updateProgress(key) {
+  const r=ROUTINES[key], done=r.habits.filter(h=>state[h.id]).length;
+  const dash=(done/r.total)*CIRC;
+  document.getElementById('bar-'+key).style.width=(done/r.total*100)+'%';
+  document.getElementById('cnt-'+key).textContent=done;
+  document.getElementById('r-'+key).setAttribute('stroke-dasharray',`${dash.toFixed(1)} ${CIRC.toFixed(1)}`);
+}
+
+function updateSummary() {
+  let total=0,done=0;
+  for (const [key,r] of Object.entries(ROUTINES)) { total+=r.total; done+=r.habits.filter(h=>state[h.id]).length; }
+  document.getElementById('totalDone').textContent=done;
+  document.getElementById('totalAll').textContent=total;
+}
+
+function updateAll() { for(const k of Object.keys(ROUTINES)) updateProgress(k); updateSummary(); }
+
+function showTab(name,btn) {
+  document.querySelectorAll('.routine-section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+}
+
+function resetDay() {
+  if(!confirm('Reset all daily habits?')) return;
+  state={}; saveState(); renderLists(); updateAll();
+}
+
+function setLabels() {
+  const d=new Date();
+  document.getElementById('dateLabel').textContent=d.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
+  document.getElementById('monthLabel').textContent=d.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+}
+
+// WEEKLY
+function renderStaging() {
+  const el=document.getElementById('stagingList');
+  el.innerHTML=weeklyState.tasks.map((t,i)=>`
+    <div class="staging-item">
+      <div class="staging-name">${t.name}</div>
+      <div class="staging-selects">
+        <select class="q-select" onchange="updateTask(${i},'urgent',this.value)">
+          <option value="" ${!t.urgent?'selected':''}>Urgent?</option>
+          <option value="yes" ${t.urgent==='yes'?'selected':''}>Urgent</option>
+          <option value="no"  ${t.urgent==='no'?'selected':''}>Not urgent</option>
+        </select>
+        <select class="q-select" onchange="updateTask(${i},'important',this.value)">
+          <option value="" ${!t.important?'selected':''}>Important?</option>
+          <option value="yes" ${t.important==='yes'?'selected':''}>Important</option>
+          <option value="no"  ${t.important==='no'?'selected':''}>Not important</option>
+        </select>
+      </div>
+      <button class="remove-task" onclick="removeTask(${i})">✕</button>
+    </div>`).join('');
+}
+
+function addTask() {
+  const inp=document.getElementById('taskInput'),val=inp.value.trim();
+  if(!val) return;
+  weeklyState.tasks.push({name:val,urgent:'',important:'',who:'',time:''});
+  weeklyState.sorted=false; inp.value='';
+  saveWeekly(); renderStaging();
+  document.getElementById('quadrants').classList.remove('show');
+}
+
+function updateTask(i,field,val) { weeklyState.tasks[i][field]=val; saveWeekly(); }
+
+function removeTask(i) {
+  weeklyState.tasks.splice(i,1); saveWeekly(); renderStaging();
+  if(weeklyState.sorted) sortTasks();
+}
+
+function sortTasks() {
+  if(!weeklyState.tasks.length) return;
+  const q1=[],q2=[],q3=[],q4=[];
+  weeklyState.tasks.forEach(t=>{
+    const u=t.urgent==='yes', im=t.important==='yes';
+    if(u&&im) q1.push(t); else if(!u&&im) q2.push(t); else if(u&&!im) q3.push(t); else q4.push(t);
+  });
+
+  function qItem(t,showWho,showTime) {
+    return `<div class="q-item">
+      <span>${t.name}</span>
+      ${showTime?`<div class="q-extra"><label>Block:</label><input type="text" placeholder="When?" value="${t.time||''}" onchange="updateTaskByName('${t.name}','time',this.value)"></div>`:''}
+      ${showWho?`<div class="q-extra"><label>Who:</label><input type="text" placeholder="Who?" value="${t.who||''}" onchange="updateTaskByName('${t.name}','who',this.value)"></div>`:''}
+    </div>`;
+  }
+
+  ['q1','q2','q3','q4'].forEach((q,i)=>{
+    const arr=[q1,q2,q3,q4][i];
+    const showWho=q==='q3', showTime=q==='q2';
+    document.getElementById(q+'-body').innerHTML=arr.length?arr.map(t=>qItem(t,showWho,showTime)).join(''):'<div class="q-empty">Nothing here</div>';
+  });
+
+  weeklyState.sorted=true; saveWeekly();
+  document.getElementById('quadrants').classList.add('show');
+}
+
+function updateTaskByName(name,field,val) {
+  const t=weeklyState.tasks.find(t=>t.name===name);
+  if(t){t[field]=val;saveWeekly();}
+}
+
+function clearWeek() {
+  if(!confirm('Clear all tasks for this week?')) return;
+  weeklyState={tasks:[],sorted:false}; saveWeekly(); renderStaging();
+  document.getElementById('quadrants').classList.remove('show');
+}
+
+// MONTHLY
+function renderGoals() {
+  document.getElementById('goalsList').innerHTML=monthlyState.goals.map((g,i)=>`
+    <div class="month-goal-item">
+      <div class="goal-top">
+        <div class="goal-circle ${g.done?'done':''}" onclick="toggleGoal(${i})">
+          <svg viewBox="0 0 11 11" fill="none"><path d="M1 5.5L4 8.5L10 2" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="goal-text ${g.done?'done':''}">${g.name}</div>
+        <button class="goal-remove" onclick="removeGoal(${i})">✕</button>
+      </div>
+      <textarea class="goal-notes" placeholder="Notes..." oninput="updateGoalNote(${i},this.value)" rows="2">${g.notes||''}</textarea>
+    </div>`).join('');
+}
+
+function addGoal() {
+  const inp=document.getElementById('goalInput'),val=inp.value.trim();
+  if(!val) return;
+  monthlyState.goals.push({name:val,done:false,notes:''});
+  inp.value=''; saveMonthly(); renderGoals();
+}
+
+function toggleGoal(i) { monthlyState.goals[i].done=!monthlyState.goals[i].done; saveMonthly(); renderGoals(); }
+function removeGoal(i) { monthlyState.goals.splice(i,1); saveMonthly(); renderGoals(); }
+function updateGoalNote(i,val) { monthlyState.goals[i].notes=val; saveMonthly(); }
+
+function loadMonthlyUI() {
+  document.getElementById('rev-well').value    = monthlyState.well||'';
+  document.getElementById('rev-improve').value = monthlyState.improve||'';
+  document.getElementById('rev-next').value    = monthlyState.next||'';
+  renderGoals();
+}
+
+function clearMonth() {
+  if(!confirm('Archive this month and start fresh?')) return;
+  monthlyState={month:thisMonth(),goals:[],well:'',improve:'',next:''};
+  localStorage.setItem(MDK,thisMonth()); saveMonthly(); loadMonthlyUI();
+}
+
+// AUTO RESET
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden) {
+    if(localStorage.getItem(DK)!==today()){state={};saveState();localStorage.setItem(DK,today());renderLists();updateAll();setLabels();}
+    if(localStorage.getItem(WDK)!==thisWeek()){weeklyState={tasks:[],sorted:false};saveWeekly();renderStaging();document.getElementById('quadrants').classList.remove('show');}
+  }
+});
+
+// PWA INSTALL
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault(); deferredPrompt=e;
+  if(!localStorage.getItem('install_dismissed')) document.getElementById('installBanner').classList.add('show');
+});
+document.getElementById('installBtn').addEventListener('click',async()=>{
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const{outcome}=await deferredPrompt.userChoice;
+  if(outcome==='accepted') dismissInstall();
+  deferredPrompt=null;
+});
+function dismissInstall(){document.getElementById('installBanner').classList.remove('show');localStorage.setItem('install_dismissed','1');}
+
+if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
+
+// INIT
+renderLists(); updateAll(); setLabels(); renderStaging();
+if(weeklyState.sorted) sortTasks();
+loadMonthlyUI();
+</script>
+</body>
+</html>
