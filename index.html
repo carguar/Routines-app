@@ -10,6 +10,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icon-192.png">
 <title>Daily Routines</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
@@ -312,6 +313,12 @@ input[type="checkbox"].hchk:checked + label .htext{opacity:.38;text-decoration:l
 </div>
 
 <script>
+// ─── Supabase config — replace placeholders before deploying ───────────────
+const SUPABASE_URL      = 'YOUR_SUPABASE_URL';
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// ───────────────────────────────────────────────────────────────────────────
+
 const ROUTINES = {
   morning: { total:14, habits:[
     {id:'mg1', name:'Thank God for Another Day', dur:'10 min'},
@@ -368,12 +375,15 @@ function today()     { return new Date().toISOString().split('T')[0]; }
 function thisWeek()  { const d=new Date(),day=d.getDay(),diff=d.getDate()-day+(day===0?-6:1),mon=new Date(d.setDate(diff)); return mon.toISOString().split('T')[0]; }
 function thisMonth() { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
 
-// DAILY
+// DAILY — load from localStorage first (instant), then hydrate from Supabase
 function loadState() {
   if (localStorage.getItem(DK)!==today()) { localStorage.setItem(DK,today()); localStorage.removeItem(SK); return {}; }
   try { return JSON.parse(localStorage.getItem(SK))||{}; } catch { return {}; }
 }
-function saveState() { localStorage.setItem(SK,JSON.stringify(state)); }
+function saveState() {
+  localStorage.setItem(SK,JSON.stringify(state));
+  sb.from('daily_state').upsert({date:today(),state}).catch(()=>{});
+}
 let state = loadState();
 
 // WEEKLY
@@ -381,7 +391,10 @@ function loadWeekly() {
   if (localStorage.getItem(WDK)!==thisWeek()) { localStorage.setItem(WDK,thisWeek()); localStorage.removeItem(WSK); return {tasks:[],sorted:false}; }
   try { return JSON.parse(localStorage.getItem(WSK))||{tasks:[],sorted:false}; } catch { return {tasks:[],sorted:false}; }
 }
-function saveWeekly() { localStorage.setItem(WSK,JSON.stringify(weeklyState)); }
+function saveWeekly() {
+  localStorage.setItem(WSK,JSON.stringify(weeklyState));
+  sb.from('weekly_state').upsert({week_start:thisWeek(),state:weeklyState}).catch(()=>{});
+}
 let weeklyState = loadWeekly();
 
 // MONTHLY
@@ -394,8 +407,36 @@ function saveMonthly() {
   monthlyState.next    = document.getElementById('rev-next').value;
   localStorage.setItem(MDK,thisMonth());
   localStorage.setItem(MSK,JSON.stringify(monthlyState));
+  sb.from('monthly_state').upsert({month:thisMonth(),state:monthlyState}).catch(()=>{});
 }
 let monthlyState = loadMonthly();
+
+// SUPABASE HYDRATION — after first render, pull cloud state and refresh UI
+async function hydrateFromSupabase() {
+  try {
+    const [d,w,m] = await Promise.all([
+      sb.from('daily_state').select('state').eq('date',today()).maybeSingle(),
+      sb.from('weekly_state').select('state').eq('week_start',thisWeek()).maybeSingle(),
+      sb.from('monthly_state').select('state').eq('month',thisMonth()).maybeSingle(),
+    ]);
+    if (d.data) {
+      state = d.data.state;
+      localStorage.setItem(DK,today()); localStorage.setItem(SK,JSON.stringify(state));
+      renderLists(); updateAll();
+    }
+    if (w.data) {
+      weeklyState = w.data.state;
+      localStorage.setItem(WDK,thisWeek()); localStorage.setItem(WSK,JSON.stringify(weeklyState));
+      renderStaging();
+      if (weeklyState.sorted) sortTasks();
+    }
+    if (m.data) {
+      monthlyState = m.data.state;
+      localStorage.setItem(MDK,thisMonth()); localStorage.setItem(MSK,JSON.stringify(monthlyState));
+      loadMonthlyUI();
+    }
+  } catch(e) { /* offline — localStorage already loaded */ }
+}
 
 // RENDER HABITS
 function habitHTML(h,key) {
@@ -596,10 +637,11 @@ function dismissInstall(){document.getElementById('installBanner').classList.rem
 
 if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
 
-// INIT
+// INIT — render immediately from localStorage, then hydrate from Supabase
 renderLists(); updateAll(); setLabels(); renderStaging();
 if(weeklyState.sorted) sortTasks();
 loadMonthlyUI();
+hydrateFromSupabase();
 </script>
 </body>
 </html>
